@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV File Upload</title>
+</head>
+<body>
+    <h1>CSV File Upload</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" required>
+        <input type="submit" value="Upload">
+    </form>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    
+    <form action="/clean" method="post">
+        <label for="q1_value">Valor Q1 (de 0 a 50%)</label>
+        <input type="range" min="0" max="50" name="q1_value" id="q1_value" value="0.2">
+        <label for="q1_value">Valor Q3 (de 50% a 100%)</label>
+        <input type="range" min="50" max="100" name="q3_value" id="q3_value" value="0.8">
+        <input type="submit" value="Clean File">
+    </form>
+</body>
+</html>
