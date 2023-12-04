@@ -20,45 +20,58 @@ class ProcesoDatos():
 class LimpiezaDatos():
 
     def __init__(self, datos, q1, q3):
-        self.q1 = q1 or 0.2
-        self.q3 = q3 or 0.8
+        self.q1 = q1
+        self.q3 = q3
         self.datos = pd.read_csv(datos)
 
-    def nulos_normalizacion(self):
+    def Super_limpieza(self):
+
+        #Eliminación de nulos
         self.datos.dropna(inplace=True)
+
+        # Al haber analizado el dataset previamente, ahora sabemos que hay que transformar al columna median_income a un float
+        self.datos["median_income"] = self.datos["median_income"].apply(lambda x: x.replace(" ", ""))
+        self.datos["median_income"] = self.datos["median_income"].astype("float")
+
+        # Se pasa un logaritmo de las siguientes columnas para obtener una distribucion normal de ellas (se le suma 1 para evitar valores de 0 y no afecta proporciones)
         self.datos["total_rooms"] = np.log(self.datos["total_rooms"] + 1)
         self.datos["total_bedrooms"] = np.log(self.datos["total_bedrooms"] + 1)
         self.datos["population"] = np.log(self.datos["population"] + 1)
         self.datos["households"] = np.log(self.datos["households"] + 1)
+
+        # Se hace una codificación ordinal en la columna ocean proximity y se dropea ISLAND y las filas que tuvieran ese valor
         self.datos = self.datos.join(pd.get_dummies(self.datos.ocean_proximity, dtype=int)).drop(["ocean_proximity"], axis=1)
+        self.datos = self.datos[self.datos["ISLAND"] != 1]
+        self.datos = self.datos.drop(["ISLAND"], axis=1)
         self.datos["bedroom_ratio"] = self.datos["total_bedrooms"] / self.datos["total_rooms"]
         self.datos["household_rooms"] = self.datos["total_rooms"] / self.datos["households"]
-        self.datos.to_csv("dataset_limpio.csv")
-        return self.datos
 
-    def outliers_delete(self):
-        self.datos = pd.read_csv("dataset_limpio.csv")
-        # Eliminacion de los datos de Island
-        self.datos = self.datos.drop(["ISLAND"], axis=1)  
-        # Assign the result back to the variable
-
-        # Eliminacion de outliers y el calculo el rango intercuartilico (IQR)
         
-        IQR = self.q3 - self.q1
+        # Proceso de eliminación de outliers
+        q1 = self.datos.quantile(self.q1)
+        q3 = self.datos.quantile(self.q3)
 
-        # Definir los limites inferior y superior para identificar outliers
-        lower_bound = self.q1 - 1.5 * IQR
-        upper_bound = self.q3 + 1.5 * IQR
-        # Filtrar filas que estan dentro de los limites
+        IQR = q3 - q1 
+
+        # Definir los límites inferior y superior para identificar outliers
+        lower_bound = q1 - 1.5 * IQR
+        upper_bound = q3 + 1.5 * IQR
+
+        # Filtrar filas que están dentro de los límites
         outliers = (self.datos < lower_bound) | (self.datos > upper_bound)
 
-        # Contar el numero de outliers en cada fila
+        # Contar el número de outliers en cada fila
         outliers_count = outliers.sum(axis=1)
 
         # Eliminar filas que contienen al menos un outlier
         self.datos = self.datos[outliers_count == 0]
-        self.datos.to_csv("dataset_muy_limpio.csv")
+
+        # Guardar el DataFrame limpio en un archivo CSV
+        self.datos.to_csv("dataset_muy_limpio.csv", index=False)
+
+        # Devolver el DataFrame limpio
         return self.datos
+
 
 class Entrenamiento():
 
@@ -98,11 +111,22 @@ class Entrenamiento():
 
 class Prediccion():
 
-    def __init__(self, lon, lat, h_m_a, t_rooms, t_bed, h_rooms, pop, house, m_i, bed_in, modelo):
-        self.user_data = np.array([lon,lat,h_m_a,t_rooms,t_bed,h_rooms,pop, house, m_i, bed_in]).reshape(1, -1)
+    def __init__(self, lon, lat, h_m_a, t_rooms, t_bed, h_rooms, pop, house, m_i, bed_ra, modelo, ocean_distance):
+        data = [lon,lat,h_m_a, np.log(t_rooms),np.log(t_bed),np.log(pop),np.log(house),m_i]
+
+        if ocean_distance == 1:
+            data.append(0,1,0,0,bed_ra, h_rooms)
+        elif ocean_distance == 2:
+            data.append(1,0,0,0,bed_ra, h_rooms)
+        elif ocean_distance == 3:
+            data.append(0,0,1,0,bed_ra, h_rooms)
+        else:
+            data.append(0,0,0,1,bed_ra, h_rooms)
+
+
+        self.user_data = np.array(data).reshape(1, -1)
         self.modelo = modelo
 
     def Predecir(self):
         resultado = self.modelo.predict(self.user_data)
         return resultado[0]
-    

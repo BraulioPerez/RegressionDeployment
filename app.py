@@ -40,23 +40,75 @@ def upload_file():
 
 @app.route('/clean', methods=['POST'])
 def clean_file():
-    # Load the uploaded CSV file
+    # Cargamos la dirección del archivo
     filename = os.path.join(app.config['UPLOAD_FOLDER'], 'housing.csv')
     
+    # cargamos los valores de q1 y q3 para la limpieza
     q1_value = float(request.form["q1_value"]) * 0.01
     q3_value = float(request.form["q3_value"]) * 0.01
 
-    df = LimpiezaDatos(datos=filename, q1=0.2, q3=0.8)
-    no_null_df = df.nulos_normalizacion()
+    # Asignamos el housing.csv a nuestro dataframe como df y nuestra clase
+    df = LimpiezaDatos(datos=filename, q1=float(q1_value), q3=float(q3_value))
+    # Aplicamos la eliminación de nulos
+    df = df.Super_limpieza()
     filename = os.path.join(app.config['UPLOAD_FOLDER'], 'dataset_limpio.csv')
-    no_null_df = LimpiezaDatos(datos=filename, q1=q1_value, q3 = q3_value)
-    cleaned_df = no_null_df.outliers_delete()
-
-    # Save the cleaned DataFrame back to the CSV file
-    cleaned_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'dataset_muy_limpio.csv')
-    cleaned_df.to_csv(cleaned_filename, index=False)
 
     return redirect(url_for('index'))
+
+model = None
+
+@app.route('/train', methods=["POST"])
+def train_model():
+    # Seleccionamos el archivo de datos limpio
+    current_directory = os.getcwd()
+    file_path = os.path.join(current_directory, "dataset_muy_limpio.csv")
+
+    # Extraemos tamaño del test desde html
+    test_size = float(request.form["test_size"]) * 0.01
+
+    # Se asigna el modelo a una variable y se le pasa el método de entrenar
+    modelo = Entrenamiento(datos = file_path, test_size= test_size)
+    modelo_final = modelo.entrenar()
+    global model
+    model = modelo_final
+
+    return redirect(url_for('index'))
+
+
+prediccion_lista = None
+model = model
+
+@app.route('/predict', methods=["POST"])
+def predict():
+    global model
+    global prediccion_lista
+    ocean_distance = request.form["ocean_distance"]
+    latitude = request.form["latitude"]
+    longitude = request.form["longitude"]
+    housing_median_age = request.form["housing_median_age"]
+    total_bedrooms = request.form["total_bedrooms"]
+    total_rooms = request.form["total_rooms"]
+    population = request.form["population"]
+    households = request.form["households"]
+    median_income = request.form["median_income"]
+
+    #bedroom_ratio,household_rooms
+    bedroom_ratio = total_bedrooms / total_rooms
+    household_rooms = total_rooms / households
+
+    prediccion_lista = Prediccion(modelo=model, lon=longitude,lat=latitude,h_m_a=housing_median_age,t_rooms=total_rooms, t_bed=total_bedrooms, h_rooms=household_rooms, pop=population,house=households, m_i=median_income, bed_ra=bedroom_ratio, ocean_distance=ocean_distance)    
+
+    return redirect(url_for("resultado"))
+
+
+prediccion_lista = prediccion_lista
+
+@app.route('/resultado')
+def resultado():
+    global prediccion_lista
+    return render_template('resultado.html', resultado=prediccion_lista)
+
+
 
 
 if __name__ == '__main__':

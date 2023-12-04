@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
     <title>CSV File Upload</title>
 </head>
 <body>
@@ -17,10 +18,56 @@
     
     <form action="/clean" method="post">
         <label for="q1_value">Valor Q1 (de 0 a 50%)</label>
-        <input type="range" min="0" max="50" name="q1_value" id="q1_value" value="0.2">
-        <label for="q1_value">Valor Q3 (de 50% a 100%)</label>
-        <input type="range" min="50" max="100" name="q3_value" id="q3_value" value="0.8">
+        <input type="number" min="0" max="50" name="q1_value" id="q1_value" value="20">
+        <label for="q3_value">Valor Q3 (de 50% a 100%)</label>
+        <input type="number" min="50" max="100" name="q3_value" id="q3_value" value="80">
         <input type="submit" value="Clean File">
+    </form>
+
+    <form action="/train" method="post">
+        <h1>Model training</h1>
+        <label for="test_size">TEST SIZE 0% - 50%</label>
+        <input type="number" min="0" max="50" name="test_size" id="test_size" value="20">
+        <input type="submit" value="Train">
+    </form>
+
+    <form>
+        <label for="longitude">Longitude</label>
+        <input type="number" min="-124.15" max="114.31" name="longitude" id="longitude" value="0" step="0.01">
+        
+        <label for="latitude">Latitue</label>
+        <input type="number" min="32.5" max="41.88" name="latitude" id="q1_value" value="36" step="0.01">
+        
+        <label for="housing_median_age">Housing Median Age</label>
+        <input type="number" min="1" name="housing_median_age" id="housing_median_age" value="25" step="0.01">
+        
+        <label for="total_rooms">Total Rooms</label>
+        <input type="number" min="2" name="total_rooms" id="total_rooms" value="5" step="0.01">
+        
+        <label for="total_bedrooms">Total Bedrooms</label>
+        <input type="number" min="1" name="total_bedrooms" id="total_bedrooms" value="4" step="0.01">
+        
+        <label for="population">Populations</label>
+        <input type="number" min="3" name="population" id="population" value="5" step="0.01">
+        
+        <label for="households">Households</label>
+        <input type="number" min="1" name="households" id="households" value="5" step="0.01">
+        
+        <label for="median_income">Median Income(Thousands per month)</label>
+        <input type="number" min="1"  name="median_income" id="median_income" value="3" step="0.01">
+
+        <label for="ocean_distance">Select what fits to the property better</label>
+        <select id="ocean_distance" name="ocean_distance" size="4" multiple>
+            <option value="1">Inland</option>
+            <option value="2">Less than an hour away</option>
+            <option value="3">Near Bay</option>
+            <option value="4">Near Ocean</option>
+        </select>
+
+        <input type="submit" value="Predecir">
     </form>
 </body>
 </html>
+
+
+http://127.0.0.1:5000/?longitude=0&latitude=36&housing_median_age=25&total_rooms=5&total_bedrooms=4&population=5&households=5&median_income=3
