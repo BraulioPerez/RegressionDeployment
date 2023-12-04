@@ -103,7 +103,14 @@ class Entrenamiento():
         model = LinearRegression()
 
         # Entrenamos al modelo con los datos de entrenamiento
-        model.fit(X_train_scaled, y_train)
+        model = model.fit(X_train_scaled, y_train)
+        y_pred = model.predict(X_test_scaled)
+
+        #Evaluamos el rendimiento del modelo
+        mse = mean_squared_error(y_test, y_pred)
+
+        # Buscamos el R2 de nuestro dataframe
+        r2 = r2_score(y_test, y_pred)
         return model
 
 
@@ -111,22 +118,27 @@ class Entrenamiento():
 
 class Prediccion():
 
-    def __init__(self, lon, lat, h_m_a, t_rooms, t_bed, h_rooms, pop, house, m_i, bed_ra, modelo, ocean_distance):
-        data = [lon,lat,h_m_a, np.log(t_rooms),np.log(t_bed),np.log(pop),np.log(house),m_i]
+    def __init__(self, lon, lat, h_m_a, t_rooms, t_bed, pop, house, m_i, modelo, ocean_distance):
+        bed_ra=t_bed/t_rooms
+        h_rooms=t_rooms/house
+
+        data = [lon,lat,h_m_a, np.log(t_rooms+1),np.log(t_bed+1),np.log(pop+1),np.log(house+1),m_i]
 
         if ocean_distance == 1:
-            data.append(0,1,0,0,bed_ra, h_rooms)
+            data.extend([0, 1, 0, 0, bed_ra, h_rooms])
         elif ocean_distance == 2:
-            data.append(1,0,0,0,bed_ra, h_rooms)
+            data.extend([1, 0, 0, 0, bed_ra, h_rooms])
         elif ocean_distance == 3:
-            data.append(0,0,1,0,bed_ra, h_rooms)
+            data.extend([0, 0, 1, 0, bed_ra, h_rooms])
         else:
-            data.append(0,0,0,1,bed_ra, h_rooms)
+            data.extend([0, 0, 0, 1, bed_ra, h_rooms])
 
 
         self.user_data = np.array(data).reshape(1, -1)
         self.modelo = modelo
-
+        
     def Predecir(self):
         resultado = self.modelo.predict(self.user_data)
         return resultado[0]
+    
+

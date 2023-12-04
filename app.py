@@ -16,7 +16,7 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=["POST", "GET"])
 def upload_file():
     if 'file' not in request.files:
         return render_template('index.html', message='No file part')
@@ -38,7 +38,7 @@ def upload_file():
     return render_template('index.html', message='Invalid file type')
 
 
-@app.route('/clean', methods=['POST'])
+@app.route('/clean', methods=["POST", "GET"])
 def clean_file():
     # Cargamos la dirección del archivo
     filename = os.path.join(app.config['UPLOAD_FOLDER'], 'housing.csv')
@@ -57,7 +57,7 @@ def clean_file():
 
 model = None
 
-@app.route('/train', methods=["POST"])
+@app.route('/train', methods=["POST", "GET"])
 def train_model():
     # Seleccionamos el archivo de datos limpio
     current_directory = os.getcwd()
@@ -78,39 +78,31 @@ def train_model():
 prediccion_lista = None
 model = model
 
-@app.route('/predict', methods=["POST"])
+@app.route('/predict', methods=["POST", "GET"])
 def predict():
     global model
     global prediccion_lista
-    ocean_distance = request.form["ocean_distance"]
-    latitude = request.form["latitude"]
-    longitude = request.form["longitude"]
-    housing_median_age = request.form["housing_median_age"]
-    total_bedrooms = request.form["total_bedrooms"]
-    total_rooms = request.form["total_rooms"]
-    population = request.form["population"]
-    households = request.form["households"]
-    median_income = request.form["median_income"]
+    ocean_distance = float(request.form["ocean_distance"])
+    latitude = float(request.form["latitude"])
+    longitude = float(request.form["longitude"])
+    housing_median_age = float(request.form["housing_median_age"])
+    total_bedrooms = float(request.form["total_bedrooms"])
+    total_rooms = float(request.form["total_rooms"])
+    population = float(request.form["population"])
+    households = float(request.form["households"])
+    median_income = float(request.form["median_income"])
 
     #bedroom_ratio,household_rooms
-    bedroom_ratio = total_bedrooms / total_rooms
-    household_rooms = total_rooms / households
 
-    prediccion_lista = Prediccion(modelo=model, lon=longitude,lat=latitude,h_m_a=housing_median_age,t_rooms=total_rooms, t_bed=total_bedrooms, h_rooms=household_rooms, pop=population,house=households, m_i=median_income, bed_ra=bedroom_ratio, ocean_distance=ocean_distance)    
+    resultado = Prediccion(modelo=model, lon=longitude,lat=latitude,h_m_a=housing_median_age,t_rooms=total_rooms, t_bed=total_bedrooms, pop=population,house=households, m_i=median_income, ocean_distance=ocean_distance)    
+    valor_predicho =  resultado.Predecir()
 
-    return redirect(url_for("resultado"))
+    return render_template("index.html", prediction_message=f"La casa vale ${valor_predicho} pesos")
 
-
-prediccion_lista = prediccion_lista
-
-@app.route('/resultado')
-def resultado():
-    global prediccion_lista
-    return render_template('resultado.html', resultado=prediccion_lista)
 
 
 
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=True, port=4000)
